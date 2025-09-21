@@ -1,6 +1,6 @@
 # 🔐 EncryptBin
 
-[![CI](https://github.com/pmalinen/EncryptBin/actions/workflows/CI.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/CI.yml)
+[![CI](https://github.com/pmalinen/EncryptBin/actions/workflows/ci.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pmalinen/EncryptBin/branch/main/graph/badge.svg)](https://codecov.io/gh/pmalinen/EncryptBin)
 [![Screenshots](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml)
 [![Docker Pulls](https://img.shields.io/docker/pulls/pmalinen/encryptbin)](https://hub.docker.com/r/pmalinen/encryptbin)
