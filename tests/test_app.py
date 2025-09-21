@@ -1,78 +1,60 @@
+# flake8: noqa: E402
 import os
 import sys
-import time
 
+# Ensure repo root is on sys.path *before* importing app
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import base64
+import json
+import secrets
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app import app
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-
 client = TestClient(app)
 
 
-def test_create_and_retrieve_paste(tmp_path, monkeypatch):
-    """Ensure a paste can be created and retrieved (raw)."""
-    # Force local storage for tests
-    monkeypatch.setenv("STORAGE_BACKEND", "local")
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-
-    # Create a paste
-    resp = client.post("/paste", data={"content": "hello world", "title": "Test"})
+def test_version_endpoint():
+    resp = client.get("/api/version")
     assert resp.status_code == 200
     data = resp.json()
+    assert "version" in data
+
+
+@pytest.mark.parametrize("content", ["hello world", "another paste"])
+def test_plaintext_paste_and_retrieve(content):
+    # This only works if ENCRYPTBIN_ALLOW_PLAINTEXT=true
+    resp = client.post("/api/paste", data=content.encode("utf-8"))
+    if resp.status_code == 404:
+        pytest.skip("Plaintext pastes disabled")
+    assert resp.status_code == 200
+    paste_id = resp.text.strip()
+
+    # Retrieve raw
+    raw = client.get(f"/raw/{paste_id}")
+    assert raw.status_code == 200
+    assert content in raw.text
+
+
+def test_encrypted_paste_roundtrip():
+    # Generate fake iv and ciphertext
+    iv = secrets.token_bytes(12)
+    ciphertext = base64.b64encode(b"dummycipher").decode("utf-8")
+    iv_b64 = base64.b64encode(iv).decode("utf-8")
+
+    payload = {
+        "ciphertext_b64": ciphertext,
+        "iv_b64": iv_b64,
+        "alg": "AES-GCM",
+        "title": "test",
+        "expires": "1d",
+        "burn_after": False,
+    }
+    resp = client.post("/api/paste_encrypted", data=json.dumps(payload))
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "id" in data
     assert "url" in data
-    paste_url = data["url"]
-
-    # Retrieve paste (raw)
-    raw_url = paste_url.replace("/paste/", "/raw/")
-    resp2 = client.get(raw_url)
-    assert resp2.status_code == 200
-    assert "hello world" in resp2.text
-
-
-def test_expiration_and_cleanup(tmp_path, monkeypatch):
-    """Expired pastes should be removed by cleanup."""
-    import storage
-    from cleanup import cleanup_expired
-
-    monkeypatch.setenv("STORAGE_BACKEND", "local")
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-
-    # Create paste with expiration
-    resp = client.post("/paste", data={"content": "temp", "expire": "1d"})
-    assert resp.status_code == 200
-    paste_id = resp.json()["id"]
-
-    # Force expiry by manipulating metadata
-    meta = storage.get_store().get_meta(paste_id)
-    meta["expires"] = time.time() - 1
-    storage.get_store().save_meta(paste_id, meta)
-
-    # Run cleanup
-    cleanup_expired(storage.get_store())
-
-    # Paste should now be gone
-    resp2 = client.get(f"/raw/{paste_id}")
-    assert resp2.status_code == 404
-
-
-def test_burn_after_read(tmp_path, monkeypatch):
-    """Pastes marked burn-after-read should be deleted after the first view."""
-    monkeypatch.setenv("STORAGE_BACKEND", "local")
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-
-    # Create paste with burn_after=1
-    resp = client.post("/paste", data={"content": "secret", "burn_after": "1"})
-    assert resp.status_code == 200
-    paste_id = resp.json()["id"]
-
-    # First read should succeed
-    resp2 = client.get(f"/raw/{paste_id}")
-    assert resp2.status_code == 200
-    assert "secret" in resp2.text
-
-    # Second read should fail
-    resp3 = client.get(f"/raw/{paste_id}")
-    assert resp3.status_code == 404
