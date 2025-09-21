@@ -3,6 +3,8 @@
 [![CI](https://github.com/pmalinen/EncryptBin/actions/workflows/CI.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/pmalinen/EncryptBin/branch/main/graph/badge.svg)](https://codecov.io/gh/pmalinen/EncryptBin)
 [![Generate Screenshots](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/pmalinen/encryptbin)](https://hub.docker.com/r/pmalinen/encryptbin)
+[![Docker Image Version](https://img.shields.io/docker/v/pmalinen/encryptbin?sort=semver)](https://hub.docker.com/r/pmalinen/encryptbin/tags)
 
 **EncryptBin** is a self-hosted, minimal, and secure pastebin alternative.
 All pastes are **encrypted client-side** with AES-256 before they are sent to the server.
