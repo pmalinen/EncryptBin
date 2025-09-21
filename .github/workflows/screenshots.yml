@@ -2,7 +2,7 @@
 name: Screenshots
 
 on:
-  pull_request:    # ✅ only run on PRs targeting main
+  pull_request:
     branches: [ main ]
 
 jobs:
@@ -11,8 +11,7 @@ jobs:
 
     services:
       encryptbin:
-        build:
-          context: .
+        image: pmalinen/encryptbin:latest   # ✅ pulls from Docker Hub
         ports:
           - 8000:8000
         options: >-
