@@ -1,0 +1,13 @@
+services:
+  encryptbin:
+    build: .
+    image: encryptbin:latest
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    env_file: [".env"]
+    volumes: ["./data:/data"]
+  encryptbin-cleanup:
+    build: .
+    command: ["python", "cleanup.py"]
+    env_file: [".env"]
+    volumes: ["./data:/data"]

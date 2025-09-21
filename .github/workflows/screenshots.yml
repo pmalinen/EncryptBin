@@ -1,0 +1,66 @@
+---
+name: Screenshots
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build EncryptBin image (local only)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true        # ✅ load image into local Docker instead of pushing
+          tags: encryptbin:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run app container
+        run: docker run -d -p 8000:8080 --name encryptbin encryptbin:ci
+
+      - name: Wait for app to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -sSf http://localhost:8000/ > /dev/null; then
+              echo "App is ready!"
+              exit 0
+            fi
+            echo "Waiting for app..."
+            sleep 2
+          done
+          echo "App failed to start"
+          docker logs encryptbin
+          exit 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Run screenshot script
+        run: python scripts/capture.py   # ✅ fixed filename
+
+      - name: Commit updated screenshots to PR branch
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "[screenshots] update preview images [skip ci]"
+          file_pattern: docs/screenshots/*.png
+          branch: ${{ github.head_ref }}
+
+      - name: Debug logs
+        if: failure()
+        run: docker logs encryptbin

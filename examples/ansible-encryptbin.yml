@@ -1,0 +1,21 @@
+---
+- name: Send command output to EncryptBin
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Run uptime
+      command: uptime
+      register: uptime_out
+
+    - name: Post to EncryptBin (plaintext endpoint must be enabled)
+      uri:
+        url: "https://your-encryptbin.tld/api/paste"
+        method: POST
+        body: "{{ uptime_out.stdout }}"
+        body_format: raw
+        return_content: yes
+      register: paste_response
+
+    - name: Show paste URL
+      debug:
+        msg: "Uptime paste: {{ paste_response.content | trim }}"
