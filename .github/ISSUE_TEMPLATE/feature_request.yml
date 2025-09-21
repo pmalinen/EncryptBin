@@ -1,0 +1,38 @@
+name: "✨ Feature Request"
+description: "Propose a new feature or enhancement for EncryptBin"
+title: "[feature] "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! 🙌
+        Please describe your idea clearly.
+
+  - type: input
+    id: motivation
+    attributes:
+      label: "Motivation"
+      description: "What problem would this feature solve?"
+      placeholder: "e.g. Easier to share via QR code"
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "Proposal"
+      description: "Describe the feature you'd like to see"
+      placeholder: "I would like EncryptBin to ..."
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives considered"
+      description: "Did you consider other solutions or workarounds?"
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Additional context"
+      description: "Add any screenshots, mockups, or related links"

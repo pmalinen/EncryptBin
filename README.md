@@ -11,6 +11,18 @@ All pastes are **encrypted client-side** with AES-256 before they are sent to th
 The server never sees your plaintext. A plaintext API endpoint exists for automation, but is **disabled by default**.
 
 ---
+## ✨ Features
+- 🔒 Client-side AES-256-GCM encryption
+- 🔑 Zero-knowledge: encryption key is only in the URL fragment (`#key`)
+- 🌓 Light/dark theme (auto-detected from system, toggle available)
+- 📋 One-click copy of paste content or URL
+- ⏱ Expiration: 1 day, 30 days, never, or burn-after-read
+- 🔍 Automatic syntax highlighting (with manual override)
+- 🗑 Background cleanup of expired pastes (local or S3)
+- 📦 Docker-ready, with Caddy reverse proxy for HTTPS
+- 🧪 CI-ready with GitHub Actions and Ansible integration examples
+
+---
 
 ## 🚀 Quick Start
 
@@ -25,7 +37,7 @@ docker run -d \
   pmalinen/encryptbin:latest
 ```
 
-- Service runs at <http://localhost:8000>
+- Open: [https://localhost](https://localhost) (Caddy provides local TLS).
 - Data is persisted locally in `./data`
 - Use environment variables to configure (see below)
 
@@ -67,11 +79,14 @@ Set environment variables in `.env` or your deployment environment:
 | `S3_REGION`                   | —       | Region of the bucket.                                                       |
 | `S3_ENDPOINT`                 | —       | Optional custom S3 endpoint.                                                |
 | `API_TOKENS`                  | —       | Comma-separated API tokens (optional for automation).                       |
-| `ENCRYPTBIN_ALLOW_PLAINTEXT`  | `false` | Enable raw plaintext storage/ingest API (automation via curl).              |
+| `ENCRYPTBIN_STORAGE` | `local` | Storage backend: `local` or `s3` |
+| `ENCRYPTBIN_DATA_DIR` | `/data` | Directory for local storage |
+| `ENCRYPTBIN_S3_BUCKET` | *(unset)* | S3 bucket name |
+| `ENCRYPTBIN_ALLOW_PLAINTEXT` | `false` | Allow unencrypted plaintext pastes |
+| `APP_VERSION` | from build | Shown in footer |
 
-> 🔒 **Security note:** Keep `ENCRYPTBIN_ALLOW_PLAINTEXT=false` unless you explicitly need the automation endpoint.
-> When enabled, use `Authorization: Bearer <token>` with tokens from `API_TOKENS`.
-
+- `ENCRYPTBIN_ALLOW_PLAINTEXT=true` → enables `/api/paste` (server-side plaintext pastes).
+- Otherwise use `/api/paste_encrypted` (recommended).
 ---
 
 ## 🧰 CLI / curl usage (automation)
@@ -143,94 +158,87 @@ Light: ![View Python Light](docs/screenshots/view-python-light.png)
 
 ---
 
-## 📂 Examples
+## 📡 API Examples
 
-### 1) GitHub Actions → send build logs to EncryptBin
+### 🔑 Encrypted paste (preferred)
 
-`.github/workflows/example-post-logs.yml`:
-
-```yaml
-name: Post build logs
-on: [push]
-
-jobs:
-  logs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Create log
-        run: |
-          echo "Build started at $(date)" > build.log
-          echo "Commit: $GITHUB_SHA" >> build.log
-
-      - name: Post logs to EncryptBin
-        env:
-          ENCRYPTBIN_TOKEN: ${{ secrets.ENCRYPTBIN_TOKEN }}
-        run: |
-          curl -fsS -X POST \
-            -H "Authorization: Bearer $ENCRYPTBIN_TOKEN" \
-            -F "content=@build.log" \
-            -F "title=CI build log" \
-            -F "expire=30d" \
-            https://your-encryptbin.example.com/paste
-```
-
-> Requires server with `ENCRYPTBIN_ALLOW_PLAINTEXT=true` and a token in `API_TOKENS`.
-
-### 2) Ansible → upload a log as a paste
-
-Snippet:
-
-```yaml
-- name: Upload logs to EncryptBin
-  uri:
-    url: "https://your-encryptbin.example.com/paste"
-    method: POST
-    headers:
-      Authorization: "Bearer {{ encryptbin_token }}"
-    body_format: form-multipart
-    body:
-      title: "syslog from {{ inventory_hostname }}"
-      expire: "1d"
-      burn_after: "0"
-      content: "{{ lookup('file', '/var/log/syslog') }}"
-  register: paste_response
-
-- debug:
-    var: paste_response.json
-```
-
-### 3) systemd unit running the Docker image
-
-```ini
-[Unit]
-Description=EncryptBin
-After=network.target
-
-[Service]
-Restart=always
-ExecStart=/usr/bin/docker run --rm \
-  -p 8000:8000 \
-  -v /opt/encryptbin/data:/app/data \
-  -e STORAGE_BACKEND=local \
-  --name encryptbin pmalinen/encryptbin:latest
-ExecStop=/usr/bin/docker stop encryptbin
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable & start:
+Use the provided wrapper script in [`examples/encryptbin-upload.sh`](examples/encryptbin-upload.sh):
 
 ```bash
-sudo systemctl enable encryptbin
-sudo systemctl start encryptbin
+./examples/encryptbin-upload.sh file.txt "Nightly build log" 30d
+```
+
+Response:
+
+```
+Shareable link: https://localhost/p/abc123def456#<key>
+```
+
+The server never sees `<key>`.
+
+### 📝 Plaintext paste (only if enabled)
+
+```bash
+curl -k -X POST   -F "content=@extracted_data.csv"   -F "title=Nightly build log"   -F "expire=30d"   -F "burn_after=0"   https://localhost/api/paste
+```
+
+Response:
+
+```
+{
+  "id": "77a8fa7d79fb",
+  "url": "https://localhost/p/77a8fa7d79fb",
+  "raw_url": "https://localhost/raw/77a8fa7d79fb",
+  "edit_key": "..."
+}
 ```
 
 ---
 
+## ⚙️ Examples
+
+See the [`examples/`](examples/) folder:
+
+- `encryptbin-upload.sh` → secure encrypted upload with curl
+- `github-action.yml` → post CI logs to EncryptBin
+- `ansible-role.yml` → push deployment logs to EncryptBin
+- `systemd-service.yml` → run EncryptBin as a service
+
+---
+## 🧹 Cleanup
+
+Expired pastes are removed automatically by the `encryptbin-cleanup` sidecar container (works for local and S3 storage).
+
+---
+
+## 🛡 Security Model
+
+- The browser generates a random AES key.
+- Content is encrypted client-side with AES-GCM.
+- Only ciphertext is sent to the server.
+- The server only stores encrypted blobs + metadata.
+- The shareable URL includes the key in the hash (`#key`), which never leaves the browser.
+
+This means:
+✅ No keys in logs, database, or API calls.
+✅ Even administrators cannot read your pastes.
+✅ All decryption and highlighting happens client-side.
+
+---
+
 ## 🧪 Development
+
+Lint + format:
+
+```bash
+pre-commit run --all-files
+```
+
+Run tests:
+
+```bash
+pytest
+```
 
 Run locally with Docker:
 
@@ -247,9 +255,12 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## 📝 License
+## 📝 License & Community
 
-[MIT License](LICENSE)
+- Licensed under the [MIT License](LICENSE)
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines
+- Read our [Code of Conduct](CODE_OF_CONDUCT.md) to foster an open and welcoming environment
+- See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 
 ---
 

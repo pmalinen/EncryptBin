@@ -1,0 +1,44 @@
+name: "🚀 First Contribution"
+description: "For newcomers who want to make their first contribution to EncryptBin"
+title: "[first-contribution] "
+labels: ["good first issue", "help wanted"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in contributing to EncryptBin! 🎉
+        This issue is designed to help you make your **first pull request**.
+
+        👉 Suggested first tasks:
+        - Improve documentation (README, CONTRIBUTING, or examples)
+        - Add or expand test coverage
+        - Update a GitHub Actions workflow example
+        - Add small UI tweaks (styling or labels)
+
+  - type: input
+    id: area
+    attributes:
+      label: "Which area are you interested in?"
+      description: "Docs, tests, frontend, backend, examples, etc."
+      placeholder: "e.g. Tests"
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: "Describe your idea"
+      description: "Briefly describe what you plan to improve or add."
+      placeholder: "I want to add a new test for expiration cleanup."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: "Checklist"
+      options:
+        - label: I have read the [CONTRIBUTING.md](../CONTRIBUTING.md) guide
+          required: true
+        - label: I agree to follow the [Code of Conduct](../CODE_OF_CONDUCT.md)
+          required: true
