@@ -43,7 +43,7 @@ jobs:
           playwright install --with-deps chromium
 
       - name: Run screenshot script
-        run: python scripts/capture.py
+        run: python scripts/captures.py
 
       - name: Commit updated screenshots to PR branch
         uses: stefanzweifel/git-auto-commit-action@v4
