@@ -1,6 +1,8 @@
 # 🔐 EncryptBin
 
+[![CI](https://github.com/pmalinen/EncryptBin/actions/workflows/CI.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/CI.yml)
 [![Generate Screenshots](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml)
+[![codecov](https://codecov.io/gh/pmalinen/EncryptBin/branch/main/graph/badge.svg)](https://codecov.io/gh/pmalinen/EncryptBin)
 
 **EncryptBin** is a self-hosted, minimal, and secure pastebin alternative.
 All pastes are **encrypted client-side** with AES-256 before they are sent to the server.
