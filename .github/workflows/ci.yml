@@ -29,11 +29,11 @@ jobs:
         run: black --check .
 
       - name: Tests + coverage
-        run: pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=0 --allow-empty
+        run: pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=0
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # only required for private repos
+          token: ${{ secrets.CODECOV_TOKEN }} # only needed for private repos
           files: ./coverage.xml
           fail_ci_if_error: true
