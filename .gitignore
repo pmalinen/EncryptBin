@@ -1,0 +1,17 @@
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Node/Playwright
+node_modules/
+playwright/.cache/
+
+# Docker
+data/
+
+# OS
+.DS_Store
+.idea

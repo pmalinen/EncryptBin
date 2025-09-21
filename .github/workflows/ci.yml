@@ -1,0 +1,23 @@
+
+name: CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Lint
+        run: flake8 .
+      - name: Format check
+        run: black --check .
+      - name: Tests + coverage
+        run: pytest --cov=. --cov-report=term-missing --cov-fail-under=80

@@ -1,0 +1,47 @@
+name: Generate Screenshots
+
+on:
+  workflow_dispatch:    # manual trigger
+  push:
+    branches: [ main ]  # run on pushes to main
+  pull_request:         # ✅ run on PRs too
+    branches: [ main ]
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+
+    services:
+      encryptbin:
+        build:
+          context: .
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd="curl --fail http://localhost:8000 || exit 1"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Run screenshot script
+        run: python scripts/capture.py
+
+      - name: Commit updated screenshots
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "ci: update screenshots"
+          file_pattern: docs/screenshots/*.png
+

@@ -1,0 +1,52 @@
+
+{% extends "base.html" %}
+{% block title %}New Paste{% endblock %}
+{% block content %}
+<form id="newPasteForm" class="card form narrow">
+  <div class="field">
+    <label for="title">Title <span class="muted">(optional)</span></label>
+    <input id="title" name="title" type="text" maxlength="140" placeholder="Short title (optional)"/>
+  </div>
+
+  <div class="field">
+    <div class="tabs">
+      <button class="tab active" type="button" data-tab="write">Write</button>
+      <button class="tab" type="button" data-tab="preview">Preview</button>
+    </div>
+  </div>
+
+  <div id="writePane" class="field">
+    <label for="content">Paste</label>
+    <textarea id="content" name="content" placeholder="Paste your text here…" class="code"></textarea>
+    <input id="file" name="file" type="file" accept="text/*,*/json,*/xml,.txt,.log,.md,.py,.js,.ts,.java,.go,.rb,.rs,.c,.cpp,.cs,.sh,.yml,.yaml"/>
+  </div>
+
+  <div id="previewPane" class="field hidden">
+    <div class="preview-head">
+      <div class="lbl muted">Preview</div>
+      <div class="preview-tools">
+        <span class="muted">Detected:</span> <strong id="detectedLangNew">—</strong>
+        <span class="sp">|</span>
+        <label>Change: 
+          <select id="langSelectNew" class="select small"></select>
+        </label>
+      </div>
+    </div>
+    <div id="preview" class="codewrap wrap">
+      <div class="codepane" id="previewCode"></div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Expires</label>
+    <div class="options">
+      <label><input type="radio" name="expires" value="never" checked/> Never</label>
+      <label><input type="radio" name="expires" value="1d"/> 1 day</label>
+      <label><input type="radio" name="expires" value="1m"/> 30 days</label>
+      <label><input type="radio" name="expires" value="burn"/> Destroy after first read</label>
+    </div>
+  </div>
+
+  <div class="actions"><button type="submit" class="btn primary">Create Encrypted Paste</button></div>
+</form>
+{% endblock %}

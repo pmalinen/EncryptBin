@@ -1,0 +1,17 @@
+name: CI with EncryptBin reporting
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          echo "Build log" > build.txt
+          echo "All good ✅" >> build.txt
+      - name: Post results to EncryptBin (plaintext endpoint must be enabled)
+        run: |
+          URL=$(curl -s -X POST --data-binary "@build.txt" https://your-encryptbin.tld/api/paste)
+          echo "📋 Build log: $URL"

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}View Paste{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <div class="title-row">
+      <h1 class="title" id="pasteTitle" contenteditable="true">{{ title or 'Untitled' }}</h1>
+      <span id="expiryInfo" class="muted"></span>
+    </div>
+    <div class="tools">
+      <div class="left-tools">
+        <button id="copyPasteBtn" class="btn small">Copy Paste</button>
+        <button id="copyUrlSafeBtn" class="btn small">Copy URL</button>
+      </div>
+      <div class="right-tools">
+        <label class="wraplbl"><input type="checkbox" id="wrapToggle" checked/> Wrap Lines</label>
+        <a class="btn small" href="/raw/{{ paste_id }}">Raw</a>
+        <a class="btn small" href="/">New</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewerControls" class="viewer-controls">
+    <div class="lang-detect">
+      <div class="lbl">Detected language (change here):</div>
+      <select id="langSelect" class="select"></select>
+      <span class="detected muted tiny">Detected: <span id="detectedLang">—</span></span>
+    </div>
+  </div>
+
+  <div id="codewrap" class="codewrap wrap">
+    <div class="codepane" id="code"></div>
+  </div>
+
+  <script>
+    window.__EXPIRES__ = {{ expires | int }};
+    window.__META__ = {{ meta | tojson | safe }};
+    window.__ENCRYPTED__ = {{ encrypted_payload | tojson | safe }};
+    window.__PLAINTEXT__ = {{ plaintext_payload | tojson | safe }};
+    window.__PASTE_ID__ = "{{ paste_id }}";
+  </script>
+</div>
+{% endblock %}
