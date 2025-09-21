@@ -2,8 +2,8 @@
 
 [![Generate Screenshots](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml/badge.svg)](https://github.com/pmalinen/EncryptBin/actions/workflows/screenshots.yml)
 
-**EncryptBin** is a self-hosted, minimal, and secure pastebin alternative.  
-All pastes are **encrypted client-side** with AES-256 before they are sent to the server.  
+**EncryptBin** is a self-hosted, minimal, and secure pastebin alternative.
+All pastes are **encrypted client-side** with AES-256 before they are sent to the server.
 The server never sees your plaintext.
 
 ---
@@ -25,20 +25,20 @@ The server never sees your plaintext.
 ## 📸 Screenshots
 
 ### Write
-Dark: ![Write Dark](docs/screenshots/write-dark.png)  
+Dark: ![Write Dark](docs/screenshots/write-dark.png)
 Light: ![Write Light](docs/screenshots/write-light.png)
 
 ### Preview (Python)
-Dark: ![Preview Python Dark](docs/screenshots/preview-python-dark.png)  
+Dark: ![Preview Python Dark](docs/screenshots/preview-python-dark.png)
 Light: ![Preview Python Light](docs/screenshots/preview-python-light.png)
 
 ### Preview (JSON)
-Dark: ![Preview JSON Dark](docs/screenshots/preview-json-dark.png)  
+Dark: ![Preview JSON Dark](docs/screenshots/preview-json-dark.png)
 Light: ![Preview JSON Light](docs/screenshots/preview-json-light.png)
 
 ### View (Python)
-Dark: ![View Python Dark](docs/screenshots/view-python-dark.png)  
-Light: ![View Python Light](docs/screenshots/view-python-light.png)  
+Dark: ![View Python Dark](docs/screenshots/view-python-dark.png)
+Light: ![View Python Light](docs/screenshots/view-python-light.png)
 ---
 
 ## ⚙️ Configuration
@@ -70,17 +70,17 @@ docker compose up --build
 
 The [`examples/`](examples) folder contains ready-to-use integrations:
 
-- **GitHub Actions**  
-  Example workflow to upload build/test logs as an encrypted paste.  
-  Useful when logs are too long for PR comments.  
+- **GitHub Actions**
+  Example workflow to upload build/test logs as an encrypted paste.
+  Useful when logs are too long for PR comments.
   → See [`examples/github-actions.yml`](examples/github-actions.yml)
 
-- **Ansible Playbook**  
-  Example playbook that posts deployment info or secrets to EncryptBin.  
+- **Ansible Playbook**
+  Example playbook that posts deployment info or secrets to EncryptBin.
   → See [`examples/ansible-playbook.yml`](examples/ansible-playbook.yml)
 
-- **Curl**  
-  Simple curl command to upload a paste directly from the terminal.  
+- **Curl**
+  Simple curl command to upload a paste directly from the terminal.
   ```bash
   curl -X POST http://localhost:8000/api/paste \
        -H "Content-Type: application/json" \

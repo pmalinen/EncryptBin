@@ -1,10 +1,14 @@
+import json
+import os
+import time
+import uuid
+from typing import Any, Dict, Optional
 
-import os, json, time, uuid
-from typing import Optional, Dict, Any
-from fastapi import FastAPI, Request, HTTPException, Header
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
 from storage import get_store
 
 __version__ = "0.4.4"
@@ -17,24 +21,32 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 store = get_store()
 
+
 def generate_id() -> str:
     return uuid.uuid4().hex[:12]
+
 
 def compute_expiry(created: int, choice: str) -> int:
     secs = EXP_CHOICES.get(choice, 0)
     return (created + secs) if secs > 0 else 0
 
+
 def is_expired(meta: Dict[str, Any]) -> bool:
     exp = int(meta.get("expires", 0) or 0)
     return exp != 0 and int(time.time()) > exp
 
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "version": __version__})
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "version": __version__}
+    )
+
 
 @app.get("/api/version")
 def api_version():
     return {"version": __version__}
+
 
 @app.post("/api/paste_encrypted")
 async def paste_encrypted(request: Request):
@@ -62,14 +74,16 @@ async def paste_encrypted(request: Request):
         "burn_after": burn_after,
         "edit_key": edit_key,
     }
-    await store.save(paste_id, json.dumps({
-        "ciphertext_b64": ciphertext_b64,
-        "iv_b64": iv_b64,
-        "alg": alg
-    }), meta)
+    await store.save(
+        paste_id,
+        json.dumps({"ciphertext_b64": ciphertext_b64, "iv_b64": iv_b64, "alg": alg}),
+        meta,
+    )
     return {"url": f"/p/{paste_id}", "editKey": edit_key, "pasteId": paste_id}
 
+
 if ALLOW_PLAINTEXT:
+
     @app.post("/api/paste", response_class=PlainTextResponse)
     async def paste_plain(request: Request):
         body = await request.body()
@@ -90,13 +104,24 @@ if ALLOW_PLAINTEXT:
         }
         await store.save(paste_id, text, meta)
         return f"{paste_id}\n"
+
 else:
+
     @app.post("/api/paste")
     async def paste_disabled():
-        raise HTTPException(status_code=404, detail="Plaintext pastes are disabled. Set ENCRYPTBIN_ALLOW_PLAINTEXT=true to enable.")
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Plaintext pastes are disabled. "
+                "Set ENCRYPTBIN_ALLOW_PLAINTEXT=true to enable."
+            ),
+        )
+
 
 @app.patch("/api/paste/{paste_id}")
-async def update_title(paste_id: str, request: Request, authorization: Optional[str] = Header(default=None)):
+async def update_title(
+    paste_id: str, request: Request, authorization: Optional[str] = Header(default=None)
+):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing edit token")
     edit_key = authorization.split(" ", 1)[1]
@@ -108,11 +133,12 @@ async def update_title(paste_id: str, request: Request, authorization: Optional[
         raise HTTPException(status_code=403, detail="Invalid edit token")
     try:
         body = await request.json()
-        meta["title"] = str(body.get("title",""))[:140]
+        meta["title"] = str(body.get("title", ""))[:140]
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid body")
     await store.save(paste_id, rec["content"], meta)
     return {"ok": True, "title": meta["title"]}
+
 
 @app.get("/p/{paste_id}", response_class=HTMLResponse)
 async def view_paste(request: Request, paste_id: str):
@@ -127,18 +153,22 @@ async def view_paste(request: Request, paste_id: str):
     content = rec["content"]
     if meta.get("burn_after", False):
         await store.delete(paste_id)
-    return templates.TemplateResponse("paste.html", {
-        "request": request,
-        "paste_id": paste_id,
-        "title": meta.get("title",""),
-        "created": meta.get("created",0),
-        "expires": meta.get("expires",0),
-        "encrypted": encrypted,
-        "encrypted_payload": content if encrypted else "",
-        "plaintext_payload": content if not encrypted else "",
-        "meta": meta,
-        "version": __version__,
-    })
+    return templates.TemplateResponse(
+        "paste.html",
+        {
+            "request": request,
+            "paste_id": paste_id,
+            "title": meta.get("title", ""),
+            "created": meta.get("created", 0),
+            "expires": meta.get("expires", 0),
+            "encrypted": encrypted,
+            "encrypted_payload": content if encrypted else "",
+            "plaintext_payload": content if not encrypted else "",
+            "meta": meta,
+            "version": __version__,
+        },
+    )
+
 
 @app.get("/raw/{paste_id}", response_class=PlainTextResponse)
 async def raw_paste(paste_id: str):

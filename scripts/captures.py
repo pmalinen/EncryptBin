@@ -1,8 +1,10 @@
 from playwright.sync_api import sync_playwright
 
+
 def take_shot(page, path):
     page.wait_for_timeout(800)  # allow highlight/theme to settle
     page.screenshot(path=path, full_page=True)
+
 
 def capture(theme, suffix):
     with sync_playwright() as p:
@@ -36,7 +38,7 @@ def capture(theme, suffix):
 
         browser.close()
 
+
 if __name__ == "__main__":
     capture("dark", "dark")
     capture("light", "light")
-

@@ -36,13 +36,13 @@ function setupTabs(){
   tabs.forEach(t=>t.addEventListener('click', ()=>{
     tabs.forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    if (t.dataset.tab==='write'){ 
-      writePane.classList.remove('hidden'); 
-      previewPane.classList.add('hidden'); 
-    } else { 
-      writePane.classList.add('hidden'); 
-      previewPane.classList.remove('hidden'); 
-      buildPreviewFromInputs(); 
+    if (t.dataset.tab==='write'){
+      writePane.classList.remove('hidden');
+      previewPane.classList.add('hidden');
+    } else {
+      writePane.classList.add('hidden');
+      previewPane.classList.remove('hidden');
+      buildPreviewFromInputs();
     }
   }));
 }
@@ -58,7 +58,7 @@ function buildPreview(text, forcedLang){
   const frag=document.createDocumentFragment();
   const lines = trimmed.split('\n');
   lines.forEach((line,i)=>{
-    const row=document.createElement('div'); 
+    const row=document.createElement('div');
     row.className='row'+(line.startsWith('+')?' added':line.startsWith('-')?' removed':'');
     const ln=document.createElement('span'); ln.className='ln'; ln.textContent=String(i+1);
     const pre=document.createElement('pre'); const code=document.createElement('code'); code.textContent=line; pre.appendChild(code);
@@ -131,7 +131,7 @@ function buildView(text, forcedLang){
   const frag=document.createDocumentFragment();
   const lines = trimmed.split('\n');
   lines.forEach((line,i)=>{
-    const row=document.createElement('div'); 
+    const row=document.createElement('div');
     row.className='row'+(line.startsWith('+')?' added':line.startsWith('-')?' removed':'');
     const ln=document.createElement('span'); ln.className='ln'; ln.textContent=String(i+1);
     const pre=document.createElement('pre'); const code=document.createElement('code'); code.textContent=line; pre.appendChild(code);
@@ -191,9 +191,9 @@ function copyToClipboard(text, btn){
   });
 }
 function setupCopy(){
-  const b1=document.getElementById('copyUrlSafeBtn'); 
+  const b1=document.getElementById('copyUrlSafeBtn');
   if(b1) b1.addEventListener('click', ()=>copyToClipboard(location.origin+location.pathname, b1));
-  const b2=document.getElementById('copyPasteBtn'); 
+  const b2=document.getElementById('copyPasteBtn');
   if(b2) b2.addEventListener('click', ()=>{
     const text = Array.from(document.querySelectorAll('#code pre code')).map(c=>c.textContent).join('\n');
     copyToClipboard(text, b2);

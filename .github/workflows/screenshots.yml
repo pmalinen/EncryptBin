@@ -44,4 +44,3 @@ jobs:
         with:
           commit_message: "ci: update screenshots"
           file_pattern: docs/screenshots/*.png
-
