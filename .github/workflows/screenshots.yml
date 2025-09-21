@@ -25,7 +25,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run app container
-        run: docker run -d -p 8000:8000 --name encryptbin encryptbin:ci
+        run: docker run -d -p 8000:8080 --name encryptbin encryptbin:ci
 
       - name: Wait for app to be ready
         run: |
