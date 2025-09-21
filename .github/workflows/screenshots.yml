@@ -25,12 +25,21 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run app container
+        run: docker run -d -p 8000:8000 --name encryptbin encryptbin:ci
+
+      - name: Wait for app to be ready
         run: |
-          docker run -d -p 8000:8000 --name encryptbin encryptbin:ci
-          for i in {1..20}; do
-            curl -sSf http://localhost:8000 && break
+          for i in {1..30}; do
+            if curl -sSf http://localhost:8000/ > /dev/null; then
+              echo "App is ready!"
+              exit 0
+            fi
+            echo "Waiting for app..."
             sleep 2
           done
+          echo "App failed to start"
+          docker logs encryptbin
+          exit 1
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -43,7 +52,7 @@ jobs:
           playwright install --with-deps chromium
 
       - name: Run screenshot script
-        run: python scripts/captures.py
+        run: python scripts/capture.py   # ✅ fixed filename
 
       - name: Commit updated screenshots to PR branch
         uses: stefanzweifel/git-auto-commit-action@v4
@@ -51,3 +60,7 @@ jobs:
           commit_message: "[screenshots] update preview images [skip ci]"
           file_pattern: docs/screenshots/*.png
           branch: ${{ github.head_ref }}
+
+      - name: Debug logs
+        if: failure()
+        run: docker logs encryptbin
