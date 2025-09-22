@@ -107,12 +107,15 @@ html:not(.dark) .select{background:#fff}
 #code .row, #previewCode .row{
   display:grid;
   grid-template-columns:56px 1fr;
-  border-bottom:1px solid rgba(255,255,255,.03);
+  border-bottom:1px solid rgba(255,255,255,.015);
   background: var(--row-bg); /* unified */
 }
 #code .row:last-child, #previewCode .row:last-child{border-bottom:none}
 
 #code .ln, #previewCode .ln{
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE10+ */
   background:transparent;
   color:var(--muted);
   text-align:right;
@@ -121,6 +124,7 @@ html:not(.dark) .select{background:#fff}
   border-right:1px solid var(--border);
   user-select:none;
   pointer-events:none; /* don’t select/copy numbers */
+  font-size: 12px;
 }
 
 #code pre, #previewCode pre{margin:0;background:transparent}
