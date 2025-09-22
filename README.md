@@ -263,7 +263,3 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 - See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 
 ---
-
-## 🏷 Version
-
-0.4.4

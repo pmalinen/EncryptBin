@@ -1,11 +1,9 @@
-
-{% set ver = version %}
 <!doctype html>
 <html lang="en" class="dark">
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>{% block title %}EncryptBin{% endblock %} · {{ ver }}</title>
+    <title>{% block title %}EncryptBin{% endblock %} · {{ version }}</title>
     <link rel="stylesheet" href="/static/css/styles.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -16,7 +14,7 @@
       <div class="toolbar"><button id="themeToggle" class="btn small">🌓</button></div>
     </header>
     <main class="container">{% block content %}{% endblock %}</main>
-    <footer class="footer">{{ ver }}</footer>
+    <footer class="footer">{{ version }}</footer>
     <script src="/static/js/app.js"></script>
   </body>
 </html>
