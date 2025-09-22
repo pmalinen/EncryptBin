@@ -27,8 +27,19 @@ function detectLanguage(sample){
   catch(e){ return 'plaintext'; }
 }
 function highlightBlock(codeEl, lang){
-  codeEl.className = lang ? ('hljs language-'+lang) : 'hljs';
-  hljs.highlightElement(codeEl);
+  // 1) Reset: strip any previous <span> markup by re-setting textContent
+  const raw = codeEl.textContent;
+  codeEl.className = 'hljs';
+  codeEl.textContent = raw;
+
+  // 2) Plaintext => leave it plain (no syntax classes or spans)
+  if (!lang || lang === 'plaintext') return;
+
+  // 3) Known language => add class and highlight
+  if (hljs.getLanguage(lang)) {
+    codeEl.classList.add('language-' + lang);
+    hljs.highlightElement(codeEl);
+  }
 }
 
 /* ---------- New Paste Page (Write/Preview) ---------- */
@@ -160,6 +171,7 @@ function buildView(text, forcedLang){
     });
     sel.onchange = ()=>{
       const lang = sel.value;
+      if (detLbl) detLbl.textContent = lang;
       pane.querySelectorAll('code').forEach(code=>highlightBlock(code, lang));
     };
   }

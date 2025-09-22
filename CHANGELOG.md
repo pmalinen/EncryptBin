@@ -1,10 +1,11 @@
 # Changelog
 
-## [Unreleased]
+## 0.4.7 — 2025-09-22
+### Fixed
+- CI fixes: Codecov upload, flake8 config, smoke tests
 - Docker Hub publishing + tags (`latest`, versioned releases)
 - Screenshots workflow commits to PR branches (`[skip ci]`)
 - Docker Quick Start + Compose examples in README
-- CI fixes: Codecov upload, flake8 config, smoke tests
 - Improved README badges (CI, Codecov, Screenshots, Docker)
 
 ## 0.4.5 — 2025-09-21

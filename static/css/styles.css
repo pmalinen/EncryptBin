@@ -196,3 +196,12 @@ mark.match{background:#ffd54a;color:black;border-radius:3px;padding:0 2px}
   align-items:center;
   gap:8px;
 }
+
+.card-head {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+}
