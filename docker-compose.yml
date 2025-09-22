@@ -1,13 +1,33 @@
+version: "3.9"
 services:
   encryptbin:
-    build: .
-    image: encryptbin:latest
-    restart: unless-stopped
-    ports: ["8080:8080"]
-    env_file: [".env"]
-    volumes: ["./data:/data"]
-  encryptbin-cleanup:
-    build: .
-    command: ["python", "cleanup.py"]
-    env_file: [".env"]
-    volumes: ["./data:/data"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: encryptbin:dev
+    platform: linux/amd64
+    container_name: encryptbin
+    environment:
+      - STORAGE_BACKEND=local
+      - ENCRYPTBIN_ALLOW_PLAINTEXT=true   # only for local testing
+    volumes:
+      - ./data:/app/data
+    expose:
+      - "8080" # internal, not exposed directly to host
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: encryptbin-caddy
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - encryptbin
+
+volumes:
+  caddy_data:
+  caddy_config:

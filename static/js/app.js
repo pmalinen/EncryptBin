@@ -11,7 +11,12 @@
 })();
 
 /* Base64 helpers */
-function bytesToBase64(b){return btoa(String.fromCharCode(...new Uint8Array(b))); }
+function bytesToBase64(buf){
+  if (buf instanceof Uint8Array) {
+    return btoa(String.fromCharCode(...buf));
+  }
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
 function base64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes.buffer;}
 function toBase64Url(b){return bytesToBase64(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
 function fromBase64Url(s){const pad=s.length%4===2?'==':s.length%4===3?'=':'';return base64ToBytes(s.replace(/-/g,'+').replace(/_/g,'/')+pad);}
@@ -111,10 +116,13 @@ async function encryptAndSubmit(evt){
   const key=await crypto.subtle.importKey('raw', K, 'AES-GCM', false, ['encrypt']);
   const iv=crypto.getRandomValues(new Uint8Array(12));
   const ct=await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, new TextEncoder().encode(plaintext));
-  const payload={ alg:'AES-GCM', iv_b64:bytesToBase64(iv), ciphertext_b64:bytesToBase64(new Uint8Array(ct)), title, expires, burnAfter:burn };
+  const payload={ alg:'AES-GCM', iv_b64:bytesToBase64(iv), ciphertext_b64:bytesToBase64(new Uint8Array(ct)), title, expires, burn_after:burn };
+
   const res=await fetch('/api/paste_encrypted',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   if(!res.ok){ alert('Failed to create paste'); return; }
-  const data=await res.json(); try{ localStorage.setItem('edit:'+data.pasteId, data.editKey);}catch(e){}
+
+  const data=await res.json();
+  try{ localStorage.setItem('edit:'+data.id, data.edit_key);}catch(e){}
   const keyUrl = toBase64Url(K.buffer);
   window.location.href = data.url + '#' + keyUrl;
 }
@@ -161,15 +169,16 @@ function buildView(text, forcedLang){
 }
 
 async function renderView(){
-  const enc = window.__ENCRYPTED__, plain = window.__PLAINTEXT__;
+  const enc = window.__ENCRYPTED__;
+  const plain = window.__PLAINTEXT__;
   const pane=document.getElementById('code');
   if(!pane) return;
 
-  if (enc && (typeof enc === 'string' || typeof enc === 'object')){
+  if (enc && typeof enc === 'object' && Object.keys(enc).length > 0){
     const hash = location.hash.replace('#',''); if(!hash){ pane.textContent='[Missing key in URL]'; return; }
     try{
       const K = new Uint8Array(fromBase64Url(hash));
-      const o = typeof enc === 'string' ? JSON.parse(enc) : enc;
+      const o = enc;
       const iv = new Uint8Array(base64ToBytes(o.iv_b64));
       const ct = new Uint8Array(base64ToBytes(o.ciphertext_b64));
       const key = await crypto.subtle.importKey('raw', K, 'AES-GCM', false, ['decrypt']);
@@ -179,8 +188,9 @@ async function renderView(){
     }catch(e){
       pane.textContent='[Decryption failed]';
     }
-  } else if (typeof plain === 'string' && plain.length) {
-    buildView(plain);
+  } else {
+    // Plaintext
+    buildView(plain || '');
   }
 }
 
@@ -192,7 +202,7 @@ function copyToClipboard(text, btn){
 }
 function setupCopy(){
   const b1=document.getElementById('copyUrlSafeBtn');
-  if(b1) b1.addEventListener('click', ()=>copyToClipboard(location.origin+location.pathname, b1));
+  if(b1) b1.addEventListener('click', ()=>copyToClipboard(location.href, b1));
   const b2=document.getElementById('copyPasteBtn');
   if(b2) b2.addEventListener('click', ()=>{
     const text = Array.from(document.querySelectorAll('#code pre code')).map(c=>c.textContent).join('\n');

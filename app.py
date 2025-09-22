@@ -2,49 +2,55 @@ import json
 import os
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from storage import get_store
 
-__version__ = "0.4.4"
-ALLOW_PLAINTEXT = os.getenv("ENCRYPTBIN_ALLOW_PLAINTEXT", "false").lower() == "true"
-MAX_PASTE_BYTES = int(os.getenv("ENCRYPTBIN_MAX_PASTE_BYTES", "10485760"))
-EXP_CHOICES = {"1d": 86400, "1m": 2592000, "never": 0}
+__version__ = os.getenv("APP_VERSION", "0.4.4")
 
-app = FastAPI(title="EncryptBin", version=__version__)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+MAX_PASTE_BYTES = 1024 * 1024 * 2  # 2MB
 store = get_store()
+templates = Jinja2Templates(directory="templates")
+
+app = FastAPI(title="EncryptBin")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-def generate_id() -> str:
+def generate_id():
     return uuid.uuid4().hex[:12]
 
 
 def compute_expiry(created: int, choice: str) -> int:
-    secs = EXP_CHOICES.get(choice, 0)
+    if choice == "never":
+        return 0
+    secs = 0
+    if choice == "1d":
+        secs = 86400
+    elif choice == "30d":
+        secs = 86400 * 30
+    elif choice == "burn":
+        secs = -1
     return (created + secs) if secs > 0 else 0
 
 
-def is_expired(meta: Dict[str, Any]) -> bool:
-    exp = int(meta.get("expires", 0) or 0)
+def expired(exp: int) -> bool:
     return exp != 0 and int(time.time()) > exp
 
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse(
-        "index.html", {"request": request, "version": __version__}
-    )
+@app.get("/")
+async def index():
+    return templates.TemplateResponse("index.html", {"request": {}})
 
 
 @app.get("/api/version")
-def api_version():
+async def version():
     return {"version": __version__}
 
 
@@ -58,33 +64,44 @@ async def paste_encrypted(request: Request):
         ciphertext_b64 = payload["ciphertext_b64"]
         iv_b64 = payload["iv_b64"]
         alg = payload.get("alg", "AES-GCM")
+        title = payload.get("title", "")
+        expires_choice = payload.get("expires", "never")
+        burn_after = bool(payload.get("burn_after"))
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
-    created = int(time.time())
+
     paste_id = generate_id()
     edit_key = uuid.uuid4().hex
-    expires_choice = payload.get("expires", "never")
-    burn_after = bool(payload.get("burnAfter", False))
+    created = int(time.time())
     meta = {
-        "title": str(payload.get("title", ""))[:140],
+        "title": title,
         "created": created,
         "expires": compute_expiry(created, expires_choice),
         "encrypted": True,
-        "alg": alg,
         "burn_after": burn_after,
+        "alg": alg,
         "edit_key": edit_key,
     }
-    await store.save(
-        paste_id,
-        json.dumps({"ciphertext_b64": ciphertext_b64, "iv_b64": iv_b64, "alg": alg}),
-        meta,
+    try:
+        await store.save_encrypted(paste_id, ciphertext_b64, iv_b64, alg, meta)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving paste: {e}")
+
+    base_url = str(request.base_url).rstrip("/")
+    return JSONResponse(
+        {
+            "id": paste_id,
+            "url": f"{base_url}/p/{paste_id}",
+            "raw_url": f"{base_url}/raw/{paste_id}",
+            "edit_key": edit_key,
+        }
     )
-    return {"url": f"/p/{paste_id}", "editKey": edit_key, "pasteId": paste_id}
 
 
-if ALLOW_PLAINTEXT:
+# Enabled only if ENCRYPTBIN_ALLOW_PLAINTEXT=true
+if os.getenv("ENCRYPTBIN_ALLOW_PLAINTEXT", "false").lower() == "true":
 
-    @app.post("/api/paste", response_class=PlainTextResponse)
+    @app.post("/api/paste")
     async def paste_plain(request: Request):
         body = await request.body()
         if len(body) > MAX_PASTE_BYTES:
@@ -92,7 +109,9 @@ if ALLOW_PLAINTEXT:
         text = body.decode("utf-8", errors="replace")
         if not text.strip():
             raise HTTPException(status_code=400, detail="Empty paste")
+
         paste_id = generate_id()
+        edit_key = uuid.uuid4().hex
         created = int(time.time())
         meta = {
             "title": "",
@@ -100,10 +119,22 @@ if ALLOW_PLAINTEXT:
             "expires": compute_expiry(created, "never"),
             "encrypted": False,
             "burn_after": False,
-            "edit_key": uuid.uuid4().hex,
+            "edit_key": edit_key,
         }
-        await store.save(paste_id, text, meta)
-        return f"{paste_id}\n"
+        try:
+            await store.save(paste_id, text, meta)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error saving paste: {e}")
+
+        base_url = str(request.base_url).rstrip("/")
+        return JSONResponse(
+            {
+                "id": paste_id,
+                "url": f"{base_url}/p/{paste_id}",
+                "raw_url": f"{base_url}/raw/{paste_id}",
+                "edit_key": edit_key,
+            }
+        )
 
 else:
 
@@ -123,62 +154,59 @@ async def update_title(
     paste_id: str, request: Request, authorization: Optional[str] = Header(default=None)
 ):
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing edit token")
-    edit_key = authorization.split(" ", 1)[1]
+        raise HTTPException(status_code=403, detail="Missing or invalid token")
+    token = authorization.split(" ")[1]
+    allowed = os.getenv("API_TOKENS", "").split(",")
+    if token not in allowed:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    body = await request.json()
+    title = body.get("title", "")
     rec = await store.get(paste_id)
     if not rec:
-        raise HTTPException(status_code=404, detail="Not found")
-    meta = rec.get("meta", {})
-    if edit_key != meta.get("edit_key"):
-        raise HTTPException(status_code=403, detail="Invalid edit token")
-    try:
-        body = await request.json()
-        meta["title"] = str(body.get("title", ""))[:140]
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid body")
-    await store.save(paste_id, rec["content"], meta)
-    return {"ok": True, "title": meta["title"]}
+        raise HTTPException(status_code=404, detail="Paste not found")
+    rec["meta"]["title"] = title
+    await store.put(paste_id, rec)
+    return {"ok": True, "title": title}
 
 
-@app.get("/p/{paste_id}", response_class=HTMLResponse)
-async def view_paste(request: Request, paste_id: str):
+@app.get("/p/{paste_id}")
+async def view_paste(paste_id: str, request: Request):
     rec = await store.get(paste_id)
     if not rec:
-        raise HTTPException(status_code=404, detail="Not found")
-    meta = rec.get("meta", {})
-    if is_expired(meta):
-        await store.delete(paste_id)
-        raise HTTPException(status_code=404, detail="Not found")
-    encrypted = bool(meta.get("encrypted", False))
-    content = rec["content"]
-    if meta.get("burn_after", False):
-        await store.delete(paste_id)
+        raise HTTPException(status_code=404, detail="Paste not found")
+    meta = rec["meta"]
+    if expired(meta["expires"]):
+        raise HTTPException(status_code=404, detail="Paste expired")
+
+    encrypted_payload = None
+    plaintext_payload = ""
+
+    if meta.get("encrypted"):
+        encrypted_payload = rec.get("encrypted_payload", {})
+    else:
+        plaintext_payload = rec.get("content", "")
+
     return templates.TemplateResponse(
         "paste.html",
         {
             "request": request,
             "paste_id": paste_id,
-            "title": meta.get("title", ""),
-            "created": meta.get("created", 0),
-            "expires": meta.get("expires", 0),
-            "encrypted": encrypted,
-            "encrypted_payload": content if encrypted else "",
-            "plaintext_payload": content if not encrypted else "",
             "meta": meta,
-            "version": __version__,
+            "expires": meta.get("expires", 0),
+            "encrypted_payload": encrypted_payload,
+            "plaintext_payload": plaintext_payload,
         },
     )
 
 
-@app.get("/raw/{paste_id}", response_class=PlainTextResponse)
+@app.get("/raw/{paste_id}")
 async def raw_paste(paste_id: str):
     rec = await store.get(paste_id)
     if not rec:
-        raise HTTPException(status_code=404, detail="Not found")
-    meta = rec.get("meta", {})
-    if is_expired(meta):
-        await store.delete(paste_id)
-        raise HTTPException(status_code=404, detail="Not found")
-    if meta.get("encrypted", False):
+        raise HTTPException(status_code=404, detail="Paste not found")
+    meta = rec["meta"]
+    if expired(meta["expires"]):
+        raise HTTPException(status_code=404, detail="Paste expired")
+    if meta.get("encrypted"):
         return PlainTextResponse("[encrypted]")
     return PlainTextResponse(rec["content"])
