@@ -27,6 +27,7 @@ jobs:
 
       - name: Extract version or branch
         id: vars
+        shell: bash
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
