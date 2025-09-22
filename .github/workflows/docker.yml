@@ -25,9 +25,17 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract version from tag
+      - name: Extract version or branch
         id: vars
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == refs/pull/* ]]; then
+            echo "VERSION=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=dev" >> $GITHUB_ENV
 
       - name: Build and push
         uses: docker/build-push-action@v5
