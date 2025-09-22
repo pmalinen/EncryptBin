@@ -27,16 +27,21 @@ jobs:
 
       - name: Extract version or branch
         id: vars
-        shell: bash
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF}" == refs/heads/* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF}" == refs/pull/* ]]; then
-            echo "VERSION=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-          else
-            echo "VERSION=dev" >> $GITHUB_ENV
+          case "${GITHUB_REF}" in
+            refs/tags/v*)
+              echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+              ;;
+            refs/heads/*)
+              echo "VERSION=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+              ;;
+            refs/pull/*)
+              echo "VERSION=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "VERSION=dev" >> $GITHUB_ENV
+              ;;
+          esac
 
       - name: Build and push
         uses: docker/build-push-action@v5
