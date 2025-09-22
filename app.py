@@ -195,6 +195,7 @@ async def view_paste(paste_id: str, request: Request):
             "expires": meta.get("expires", 0),
             "encrypted_payload": encrypted_payload,
             "plaintext_payload": plaintext_payload,
+            "version": __version__,
         },
     )
 
