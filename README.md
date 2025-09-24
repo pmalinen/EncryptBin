@@ -252,7 +252,17 @@ Or run directly:
 pip install -r requirements.txt
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
+---
 
+## Release Process
+
+Releases are managed via the `Makefile`.
+
+To create and push a new release tag:
+
+```bash
+make release 0.4.7
+``
 ---
 
 ## 📝 License & Community

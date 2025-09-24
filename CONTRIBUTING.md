@@ -77,6 +77,26 @@ They are committed back to pull request branches with `[skip ci]` to avoid retri
 
 ---
 
+## 🚀 Release Process
+
+Releases are managed with the Makefile.
+
+To create and push a new release tag:
+
+```bash
+make release 0.4.7
+```
+
+This will create an annotated git tag (`v0.4.7`) and push it to the remote.
+
+Run:
+
+```bash
+make help
+```
+
+to list available commands.
+
 ## ✅ Pull Requests
 
 - Work in feature branches (never commit directly to `main`).
